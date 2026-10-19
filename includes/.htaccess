@@ -1,0 +1,2 @@
+# PHP files in this folder are only included by the pages, never opened directly (Apache).
+Require all denied

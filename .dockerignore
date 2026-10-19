@@ -1,0 +1,11 @@
+# Local settings: inside Docker the app reads its settings from environment variables
+includes/config.php
+uploads/*
+!uploads/.gitkeep
+!uploads/.htaccess
+.git
+.github
+docs
+*.zip
+_backup*
+.DS_Store

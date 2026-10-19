@@ -1,0 +1,42 @@
+# Run the whole app with one command:  docker compose up --build
+# Then open http://localhost:8080  (demo users USER1 … USER9, password demo_password1)
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: webcars
+      DB_USER: webcarsuser
+      DB_PASS: webcarspass
+      # Google's public reCAPTCHA *test* keys: the box always passes. Use your own keys in production.
+      RECAPTCHA_SITE_KEY: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
+      RECAPTCHA_SECRET_KEY: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe
+    volumes:
+      - uploads:/var/www/html/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: webcars
+      MARIADB_USER: webcarsuser
+      MARIADB_PASSWORD: webcarspass
+      MARIADB_ROOT_PASSWORD: rootpass
+    volumes:
+      - dbdata:/var/lib/mysql
+      # run once, on the first start, in this order
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  dbdata:
+  uploads:

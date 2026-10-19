@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  php-lint:
+    name: PHP ${{ matrix.php }} syntax check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["8.1", "8.3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: none
+      - name: php -l on every file
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+
+  database:
+    name: SQL imports on MySQL 8
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: webcars
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import schema, seed and upgrade
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot webcars < database/schema.sql
+          mysql -h 127.0.0.1 -uroot -proot webcars < database/seed.sql
+          mysql -h 127.0.0.1 -uroot -proot webcars < database/upgrade.sql
+          mysql -h 127.0.0.1 -uroot -proot webcars -e "SELECT COUNT(*) AS cars FROM cars; SHOW TABLES;"
